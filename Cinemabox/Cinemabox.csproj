@@ -9,6 +9,7 @@
     </PropertyGroup>
 
     <ItemGroup>
+      <PackageReference Include="Blazor.Heroicons" Version="3.2.1.1" />
       <PackageReference Include="ElectronNET.Core" Version="0.4.1" />
       <PackageReference Include="ElectronNET.Core.AspNet" Version="0.4.1" />
     </ItemGroup>

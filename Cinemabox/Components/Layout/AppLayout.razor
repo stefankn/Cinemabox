@@ -1,0 +1,76 @@
+@inherits LayoutComponentBase
+@using Blazor.Heroicons.Outline
+@inject SettingsService SettingsService
+@inject NavigationManager Nav
+
+<div class="flex h-screen">
+    <nav class="w-52 bg-neutral text-neutral-content flex flex-col shrink-0">
+        <div class="px-5 py-4 border-b border-neutral-content/10">
+            <span class="font-semibold text-sm">Cinemabox</span>
+        </div>
+
+        <div class="flex flex-col gap-0.5 px-2 py-3 flex-1">
+            <NavLink href="/" Match="NavLinkMatch.All"
+                     class="flex items-center gap-2.5 px-3 py-2 rounded text-sm text-neutral-content/60 hover:text-neutral-content hover:bg-neutral-content/10 transition-colors"
+                     ActiveClass="!text-neutral-content !bg-neutral-content/15">
+                <HomeIcon class="size-4 shrink-0" />
+                Home
+            </NavLink>
+            <NavLink href="/movies"
+                     class="flex items-center gap-2.5 px-3 py-2 rounded text-sm text-neutral-content/60 hover:text-neutral-content hover:bg-neutral-content/10 transition-colors"
+                     ActiveClass="!text-neutral-content !bg-neutral-content/15">
+                <FilmIcon class="size-4 shrink-0" />
+                Movies
+            </NavLink>
+            <NavLink href="/series"
+                     class="flex items-center gap-2.5 px-3 py-2 rounded text-sm text-neutral-content/60 hover:text-neutral-content hover:bg-neutral-content/10 transition-colors"
+                     ActiveClass="!text-neutral-content !bg-neutral-content/15">
+                <TvIcon class="size-4 shrink-0" />
+                Series
+            </NavLink>
+        </div>
+
+        <div class="px-3 py-3 border-t border-neutral-content/10">
+            <button class="flex items-center gap-2.5 px-3 py-2 rounded text-sm text-neutral-content/30 hover:text-neutral-content/60 hover:bg-neutral-content/10 transition-colors w-full"
+                    @onclick="() => _showConfirm = true">
+                <Cog6ToothIcon class="size-4 shrink-0" />
+                Reset configuration
+            </button>
+        </div>
+    </nav>
+
+    <main class="flex-1 overflow-hidden bg-base-100">
+        @Body
+    </main>
+</div>
+
+<dialog class="modal @(_showConfirm ? "modal-open" : "")">
+    <div class="modal-box max-w-sm">
+        <h3 class="font-semibold text-base">Reset configuration?</h3>
+        <p class="text-sm text-base-content/60 mt-2">
+            Your provider URL, username, and password will be deleted.
+            You'll need to go through setup again.
+        </p>
+        <div class="modal-action">
+            <button class="btn btn-ghost btn-sm" @onclick="() => _showConfirm = false">Cancel</button>
+            <button class="btn btn-error btn-sm" @onclick="ResetConfig">Reset</button>
+        </div>
+    </div>
+    <div class="modal-backdrop" @onclick="() => _showConfirm = false"></div>
+</dialog>
+
+@code {
+    private bool _showConfirm;
+
+    protected override void OnInitialized()
+    {
+        if (!SettingsService.IsConfigured)
+            Nav.NavigateTo("/setup");
+    }
+
+    private void ResetConfig()
+    {
+        SettingsService.Reset();
+        Nav.NavigateTo("/setup");
+    }
+}
