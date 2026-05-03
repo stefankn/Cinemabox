@@ -7,3 +7,4 @@ riderModule.iml
 */wwwroot/app.js
 node_modules/
 .idea/
+.DS_Store

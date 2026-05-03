@@ -1,6 +1,16 @@
 ﻿@inherits LayoutComponentBase
+@inject SettingsService SettingsService
+@inject NavigationManager Nav
 
 @Body
+
+@code {
+    protected override void OnInitialized()
+    {
+        if (!SettingsService.IsConfigured && !Nav.Uri.EndsWith("/setup", StringComparison.OrdinalIgnoreCase))
+            Nav.NavigateTo("/setup");
+    }
+}
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.

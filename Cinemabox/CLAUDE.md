@@ -69,3 +69,14 @@ There are no test projects configured yet.
 **Themes**: `light` (default) and `dark` (activated via `prefers-color-scheme: dark`). To add or change themes, edit the `@plugin` block in `../Frontend/app.css`.
 
 **No `tailwind.config.js`**: Tailwind v4 is configured entirely through the CSS file — no separate config file is needed.
+
+## Desktop UI conventions
+
+Cinemabox is a native desktop app, not a website. UI should reflect that:
+
+- **Fill the window** — pages use the full viewport (`h-screen`, `flex`). No "card floating on a gray background" patterns.
+- **No hero padding or marketing layout** — content is purposeful and utilitarian, not centered for visual drama.
+- **Left sidebar for branding/navigation** — use a fixed-width `bg-neutral` sidebar panel. Main content sits in a `flex-1 bg-base-100` panel beside it.
+- **Compact controls** — prefer `btn-sm`, tight `gap-4` spacing. Avoid oversized padded elements.
+- **Right-aligned primary actions** — action buttons (Save, Continue) sit in a `flex justify-end` row at the bottom of the form, not stretched full-width.
+- **No `shadow-xl` on floating cards** — use structural layout (sidebars, panels) to create visual hierarchy instead.

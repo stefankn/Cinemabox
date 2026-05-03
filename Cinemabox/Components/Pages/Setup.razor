@@ -1,0 +1,176 @@
+@page "/setup"
+@using System.Text.Json
+@inject SettingsService SettingsService
+@inject IHttpClientFactory HttpClientFactory
+@inject NavigationManager Nav
+
+<PageTitle>Setup — Cinemabox</PageTitle>
+
+<div class="flex h-screen">
+    <div class="w-72 bg-neutral text-neutral-content flex flex-col justify-between p-10 shrink-0">
+        <div>
+            <h1 class="text-xl font-semibold tracking-tight focus:outline-none">Cinemabox</h1>
+        </div>
+        <p class="text-neutral-content/30 text-xs">First-time setup</p>
+    </div>
+
+    <div class="flex-1 flex flex-col justify-center px-16 bg-base-100">
+        <div class="w-full max-w-sm">
+            <h2 class="text-base font-semibold mb-1">Connect your provider</h2>
+            <p class="text-base-content/50 text-sm mb-6">Enter the details from your IPTV provider.</p>
+
+            <div class="flex flex-col gap-4">
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Provider URL</legend>
+                    <input type="url"
+                           class="input w-full @(_urlError is not null ? "input-error" : "")"
+                           placeholder="http://your-provider.com"
+                           autofocus
+                           disabled="@_saving"
+                           @bind="_baseUrl"
+                           @bind:event="oninput" />
+                    @if (_urlError is not null)
+                    {
+                        <p class="fieldset-label text-error">@_urlError</p>
+                    }
+                </fieldset>
+
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Username</legend>
+                    <input type="text"
+                           class="input w-full @(_usernameError is not null ? "input-error" : "")"
+                           placeholder="Username"
+                           disabled="@_saving"
+                           @bind="_username"
+                           @bind:event="oninput" />
+                    @if (_usernameError is not null)
+                    {
+                        <p class="fieldset-label text-error">@_usernameError</p>
+                    }
+                </fieldset>
+
+                <fieldset class="fieldset">
+                    <legend class="fieldset-legend">Password</legend>
+                    <label class="input w-full @(_passwordError is not null ? "input-error" : "")">
+                        <input type="@(_showPassword ? "text" : "password")"
+                               class="grow"
+                               placeholder="Password"
+                               disabled="@_saving"
+                               @bind="_password"
+                               @bind:event="oninput" />
+                        <button type="button"
+                                class="btn btn-ghost btn-xs"
+                                disabled="@_saving"
+                                @onclick="() => _showPassword = !_showPassword">
+                            @(_showPassword ? "Hide" : "Show")
+                        </button>
+                    </label>
+                    @if (_passwordError is not null)
+                    {
+                        <p class="fieldset-label text-error">@_passwordError</p>
+                    }
+                </fieldset>
+            </div>
+
+            @if (_error is not null)
+            {
+                <div class="alert alert-error text-sm mt-4">@_error</div>
+            }
+
+            <div class="flex justify-end mt-6">
+                <button class="btn btn-primary btn-sm" disabled="@_saving" @onclick="Save">
+                    @if (_saving)
+                    {
+                        <span class="loading loading-spinner loading-xs"></span>
+                        <span>Connecting…</span>
+                    }
+                    else
+                    {
+                        <span>Continue</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    private string _baseUrl = "";
+    private string _username = "";
+    private string _password = "";
+    private bool _showPassword;
+    private bool _saving;
+    private string? _urlError;
+    private string? _usernameError;
+    private string? _passwordError;
+    private string? _error;
+
+    protected override void OnInitialized()
+    {
+        if (SettingsService.IsConfigured)
+            Nav.NavigateTo("/");
+    }
+
+    private async Task Save()
+    {
+        _urlError = null;
+        _usernameError = null;
+        _passwordError = null;
+        _error = null;
+
+        if (string.IsNullOrWhiteSpace(_baseUrl))
+            _urlError = "Provider URL is required.";
+        else if (!Uri.TryCreate(_baseUrl.Trim(), UriKind.Absolute, out var uri) ||
+                 (uri.Scheme != Uri.UriSchemeHttp && uri.Scheme != Uri.UriSchemeHttps))
+            _urlError = "Must be a valid HTTP or HTTPS URL.";
+
+        if (string.IsNullOrWhiteSpace(_username))
+            _usernameError = "Username is required.";
+
+        if (string.IsNullOrEmpty(_password))
+            _passwordError = "Password is required.";
+
+        if (_urlError is not null || _usernameError is not null || _passwordError is not null)
+            return;
+
+        _saving = true;
+        try
+        {
+            var http = HttpClientFactory.CreateClient();
+            http.BaseAddress = new Uri(_baseUrl.Trim());
+            http.Timeout = TimeSpan.FromSeconds(10);
+
+            var url = $"/player_api.php?username={Uri.EscapeDataString(_username.Trim())}&password={Uri.EscapeDataString(_password)}";
+            var response = await http.GetAsync(url);
+            response.EnsureSuccessStatusCode();
+
+            var json = await response.Content.ReadAsStringAsync();
+            var result = JsonSerializer.Deserialize<AccountInfoApiResponse>(json);
+
+            if (string.IsNullOrEmpty(result?.UserInfo.Status))
+            {
+                _error = "Invalid username or password.";
+                return;
+            }
+
+            SettingsService.Save(_baseUrl.Trim(), _username.Trim(), _password);
+            Nav.NavigateTo("/");
+        }
+        catch (HttpRequestException)
+        {
+            _error = "Could not connect to the provider. Check the URL and try again.";
+        }
+        catch (TaskCanceledException)
+        {
+            _error = "Connection timed out. Check the URL and try again.";
+        }
+        catch
+        {
+            _error = "An unexpected error occurred. Please try again.";
+        }
+        finally
+        {
+            _saving = false;
+        }
+    }
+}
