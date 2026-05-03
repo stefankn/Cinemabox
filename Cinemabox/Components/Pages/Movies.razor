@@ -1,8 +1,103 @@
 @page "/movies"
 @layout AppLayout
+@using Blazor.Heroicons.Outline
+@inject ApiClient ApiClient
 
 <PageTitle>Movies — Cinemabox</PageTitle>
 
-<div class="p-8">
-    <p class="text-base-content/40 text-sm">Movies</p>
+<div class="flex flex-col h-full">
+    @if (_loading)
+    {
+        <div class="flex items-center justify-center h-full">
+            <span class="loading loading-spinner loading-md text-base-content/30"></span>
+        </div>
+    }
+    else if (_error is not null)
+    {
+        <div class="flex flex-col items-center justify-center h-full gap-3">
+            <p class="text-sm text-error">@_error</p>
+            <button class="btn btn-ghost btn-xs" @onclick="LoadCategories">Retry</button>
+        </div>
+    }
+    else
+    {
+        <div class="px-8 pt-8 pb-4 shrink-0">
+            <label class="input w-full max-w-sm">
+                <MagnifyingGlassIcon class="size-4 text-base-content/40 shrink-0" />
+                <input type="search"
+                       placeholder="Search categories…"
+                       autofocus
+                       @bind="_search"
+                       @bind:event="oninput" />
+            </label>
+        </div>
+
+        <div class="flex-1 overflow-y-auto px-8 pb-8">
+            @{
+                var filtered = Filtered;
+            }
+            @if (filtered.Count == 0)
+            {
+                <p class="text-sm text-base-content/30 mt-4">No categories match "@_search".</p>
+            }
+            else
+            {
+                <div class="border border-base-300 rounded-lg divide-y divide-base-300">
+                    @foreach (var category in filtered)
+                    {
+                        <a href="/movies/@category.CategoryId"
+                           class="flex items-center px-4 py-2.5 hover:bg-base-200 transition-colors cursor-pointer">
+                            <span class="text-sm">@category.CategoryName</span>
+                        </a>
+                    }
+                </div>
+            }
+        </div>
+    }
 </div>
+
+@code {
+    private bool _loading = true;
+    private List<VodCategoryResponse> _categories = [];
+    private string? _error;
+    private string _search = "";
+
+    private List<VodCategoryResponse> Filtered => string.IsNullOrWhiteSpace(_search)
+        ? _categories
+        : _categories.Where(c => FuzzyMatch(c.CategoryName, _search)).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadCategories();
+    }
+
+    private async Task LoadCategories()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            _categories = await ApiClient.GetVodCategoriesAsync();
+        }
+        catch
+        {
+            _error = "Failed to load categories.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private static bool FuzzyMatch(string text, string query)
+    {
+        var t = 0;
+        foreach (var c in query)
+        {
+            t = text.IndexOf(c.ToString(), t, StringComparison.OrdinalIgnoreCase);
+            if (t < 0) return false;
+            t++;
+        }
+        return true;
+    }
+}

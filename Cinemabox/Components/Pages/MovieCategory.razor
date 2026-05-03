@@ -1,0 +1,269 @@
+@page "/movies/{CategoryId}"
+@layout AppLayout
+@using Blazor.Heroicons.Outline
+@using System.Text.RegularExpressions
+@inject ApiClient ApiClient
+@inject VodCoverService VodCovers
+
+<PageTitle>@_categoryName — Cinemabox</PageTitle>
+
+<div class="flex flex-col h-full">
+    <div class="flex items-center gap-2 px-6 py-3 border-b border-base-300 shrink-0">
+        <a href="/movies" class="flex items-center gap-1 text-sm text-base-content/50 hover:text-base-content transition-colors">
+            <ChevronLeftIcon class="size-4" />
+            Movies
+        </a>
+        <span class="text-base-content/30 text-sm">/</span>
+        <span class="text-sm font-medium flex-1">@_categoryName</span>
+        @if (!_loading && _error is null)
+        {
+            <label class="input input-sm w-48">
+                <MagnifyingGlassIcon class="size-3.5 text-base-content/40 shrink-0" />
+                <input type="search"
+                       placeholder="Search…"
+                       @bind="_search"
+                       @bind:event="oninput" />
+            </label>
+        }
+    </div>
+
+    <div class="flex flex-1 overflow-hidden">
+        <div class="flex-1 overflow-y-auto p-6">
+            @if (_loading)
+            {
+                <div class="flex items-center justify-center h-full">
+                    <span class="loading loading-spinner loading-md text-base-content/30"></span>
+                </div>
+            }
+            else if (_error is not null)
+            {
+                <div class="flex flex-col items-center justify-center h-full gap-3">
+                    <p class="text-sm text-error">@_error</p>
+                    <button class="btn btn-ghost btn-xs" @onclick="LoadStreams">Retry</button>
+                </div>
+            }
+            else if (_streams.Count == 0)
+            {
+                <div class="flex items-center justify-center h-full">
+                    <p class="text-sm text-base-content/30">No movies in this category.</p>
+                </div>
+            }
+            else
+            {
+                var filtered = Filtered;
+                @if (filtered.Count == 0)
+                {
+                    <p class="text-sm text-base-content/30 mt-2">No movies match "@_search".</p>
+                }
+                else
+                {
+                    <div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr))">
+                        @foreach (var stream in filtered)
+                        {
+                            var isSelected = _selectedStream?.StreamId == stream.StreamId;
+                            <div class="flex flex-col gap-2 cursor-pointer group" @onclick="() => SelectMovie(stream)">
+                                <div class="aspect-[2/3] rounded-lg overflow-hidden bg-base-300 @(isSelected ? "ring-2 ring-primary" : "")">
+                                    @{
+                                        var url = VodCovers.GetCoverUrl(CategoryId, stream.StreamId, stream.StreamIcon);
+                                    }
+                                    @if (!string.IsNullOrEmpty(url))
+                                    {
+                                        <img src="@url"
+                                             alt="@stream.Name"
+                                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+                                    }
+                                    else
+                                    {
+                                        <div class="w-full h-full flex items-center justify-center">
+                                            <FilmIcon class="size-8 text-base-content/20" />
+                                        </div>
+                                    }
+                                </div>
+                                <p class="text-xs text-base-content/70 leading-snug line-clamp-2">@CleanTitle(stream.Name)</p>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+
+        @if (_selectedStream is not null)
+        {
+            <div class="w-[420px] shrink-0 border-l border-base-300 overflow-y-auto flex flex-col">
+                <div class="flex items-center justify-between px-4 py-3 border-b border-base-300 shrink-0">
+                    <span class="text-sm font-medium truncate">@CleanTitle(_selectedStream.Name)</span>
+                    <button class="btn btn-ghost btn-xs btn-square ml-2 shrink-0" @onclick="() => _selectedStream = null">
+                        <XMarkIcon class="size-4" />
+                    </button>
+                </div>
+
+                @if (_detailLoading)
+                {
+                    <div class="flex items-center justify-center flex-1">
+                        <span class="loading loading-spinner loading-md text-base-content/30"></span>
+                    </div>
+                }
+                else if (_detailError is not null)
+                {
+                    <div class="flex flex-col items-center justify-center flex-1 gap-3 p-4">
+                        <p class="text-sm text-error text-center">@_detailError</p>
+                        <button class="btn btn-ghost btn-xs" @onclick="() => SelectMovie(_selectedStream)">Retry</button>
+                    </div>
+                }
+                else if (_vodInfo is not null)
+                {
+                    var info = _vodInfo.Info;
+                    var coverUrl = VodCovers.GetCoverUrl(CategoryId, _selectedStream.StreamId, _selectedStream.StreamIcon);
+
+                    <div class="p-4 flex flex-col gap-4">
+                        <div class="flex gap-4">
+                            <div class="w-28 shrink-0">
+                                <div class="aspect-[2/3] rounded-lg overflow-hidden bg-base-300">
+                                    @if (!string.IsNullOrEmpty(coverUrl))
+                                    {
+                                        <img src="@coverUrl" alt="@CleanTitle(_selectedStream.Name)"
+                                             class="w-full h-full object-cover" />
+                                    }
+                                    else
+                                    {
+                                        <div class="w-full h-full flex items-center justify-center">
+                                            <FilmIcon class="size-8 text-base-content/20" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            @if (info is not null && !string.IsNullOrWhiteSpace(info.Plot ?? info.Description))
+                            {
+                                <p class="text-xs text-base-content/70 leading-relaxed min-w-0">@(info.Plot ?? info.Description)</p>
+                            }
+                        </div>
+
+                        @if (info is not null)
+                        {
+                            <div class="flex flex-col divide-y divide-base-300 border border-base-300 rounded-lg">
+                                @if (!string.IsNullOrWhiteSpace(info.Rating))
+                                {
+                                    <MetaRow Label="Rating" Value="@info.Rating" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(info.ReleaseDate))
+                                {
+                                    <MetaRow Label="Released" Value="@info.ReleaseDate" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(info.Duration))
+                                {
+                                    <MetaRow Label="Duration" Value="@info.Duration" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(info.Genre))
+                                {
+                                    <MetaRow Label="Genre" Value="@info.Genre" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(info.Country))
+                                {
+                                    <MetaRow Label="Country" Value="@info.Country" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(info.Director))
+                                {
+                                    <MetaRow Label="Director" Value="@info.Director" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(info.Cast ?? info.Actors))
+                                {
+                                    <MetaRow Label="Cast" Value="@(info.Cast ?? info.Actors)" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(info.MpaaRating))
+                                {
+                                    <MetaRow Label="Rated" Value="@info.MpaaRating" />
+                                }
+                                @if (_vodInfo.MovieData?.ContainerExtension is { } fmt && !string.IsNullOrWhiteSpace(fmt))
+                                {
+                                    <MetaRow Label="Format" Value="@fmt.ToUpperInvariant()" />
+                                }
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string CategoryId { get; set; } = "";
+
+    private static readonly Regex PrefixPattern = new(@"^(┃[^┃]+┃\s*)+", RegexOptions.Compiled);
+    private static string CleanTitle(string name) => PrefixPattern.Replace(name, "").TrimStart();
+
+    private bool _loading = true;
+    private List<VodStreamResponse> _streams = [];
+    private string _categoryName = "";
+    private string _search = "";
+    private string? _error;
+
+    private VodStreamResponse? _selectedStream;
+    private VodInfoResponse? _vodInfo;
+    private bool _detailLoading;
+    private string? _detailError;
+
+    private List<VodStreamResponse> Filtered => string.IsNullOrWhiteSpace(_search)
+        ? _streams
+        : _streams.Where(s => FuzzyMatch(CleanTitle(s.Name), _search)).ToList();
+
+    private static bool FuzzyMatch(string text, string query)
+    {
+        var t = 0;
+        foreach (var c in query)
+        {
+            t = text.IndexOf(c.ToString(), t, StringComparison.OrdinalIgnoreCase);
+            if (t < 0) return false;
+            t++;
+        }
+        return true;
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadStreams();
+    }
+
+    private async Task LoadStreams()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var categoriesTask = ApiClient.GetVodCategoriesAsync();
+            var streamsTask = ApiClient.GetVodStreamsAsync(CategoryId);
+            await Task.WhenAll(categoriesTask, streamsTask);
+            _categoryName = categoriesTask.Result.FirstOrDefault(c => c.CategoryId == CategoryId)?.CategoryName ?? CategoryId;
+            _streams = streamsTask.Result;
+            _ = VodCovers.CacheAllAsync(CategoryId, _streams);
+        }
+        catch
+        {
+            _error = "Failed to load movies.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SelectMovie(VodStreamResponse stream)
+    {
+        _selectedStream = stream;
+        _vodInfo = null;
+        _detailError = null;
+        _detailLoading = true;
+        try
+        {
+            _vodInfo = await ApiClient.GetVodInfoAsync(stream.StreamId);
+        }
+        catch
+        {
+            _detailError = "Failed to load movie details.";
+        }
+        finally
+        {
+            _detailLoading = false;
+        }
+    }
+}
