@@ -3,6 +3,7 @@
 @using Blazor.Heroicons.Outline
 @using System.Text.RegularExpressions
 @inject ApiClient ApiClient
+@inject CatalogCache CatalogCache
 @inject VodCoverService VodCovers
 @inject SettingsService SettingsService
 @inject DownloadService DownloadService
@@ -303,7 +304,7 @@
         _error = null;
         try
         {
-            var categoriesTask = ApiClient.GetVodCategoriesAsync();
+            var categoriesTask = CatalogCache.GetVodCategoriesAsync();
             var streamsTask = ApiClient.GetVodStreamsAsync(CategoryId);
             await Task.WhenAll(categoriesTask, streamsTask);
             _categoryName = categoriesTask.Result.FirstOrDefault(c => c.CategoryId == CategoryId)?.CategoryName ?? CategoryId;

@@ -2,6 +2,7 @@
 @layout AppLayout
 @inject SettingsService SettingsService
 @inject ApiClient ApiClient
+@inject NavigationManager Nav
 
 <PageTitle>Cinemabox</PageTitle>
 
@@ -21,30 +22,53 @@
     }
     else if (_accountInfo is not null)
     {
-        <div class="max-w-sm">
-            <p class="text-xs text-base-content/40 uppercase tracking-wider font-medium mb-3">Account</p>
-            <div class="border border-base-300 rounded-lg divide-y divide-base-300">
-                <div class="flex items-center justify-between px-4 py-2.5">
-                    <span class="text-sm text-base-content/60">Username</span>
-                    <span class="text-sm font-medium">@SettingsService.Settings!.Username</span>
+        <div class="max-w-sm flex flex-col gap-4">
+            <div>
+                <p class="text-xs text-base-content/40 uppercase tracking-wider font-medium mb-3">Account</p>
+                <div class="border border-base-300 rounded-lg divide-y divide-base-300">
+                    <div class="flex items-center justify-between px-4 py-2.5">
+                        <span class="text-sm text-base-content/60">Username</span>
+                        <span class="text-sm font-medium">@SettingsService.Settings!.Username</span>
+                    </div>
+                    <div class="flex items-center justify-between px-4 py-2.5">
+                        <span class="text-sm text-base-content/60">Status</span>
+                        <span class="badge badge-sm @(_accountInfo.Status == "Active" ? "badge-success" : "badge-error")">
+                            @_accountInfo.Status
+                        </span>
+                    </div>
+                    <div class="flex items-center justify-between px-4 py-2.5">
+                        <span class="text-sm text-base-content/60">Expires</span>
+                        <span class="text-sm font-medium">@FormatExpDate(_accountInfo.ExpDate)</span>
+                    </div>
                 </div>
-                <div class="flex items-center justify-between px-4 py-2.5">
-                    <span class="text-sm text-base-content/60">Status</span>
-                    <span class="badge badge-sm @(_accountInfo.Status == "Active" ? "badge-success" : "badge-error")">
-                        @_accountInfo.Status
-                    </span>
-                </div>
-                <div class="flex items-center justify-between px-4 py-2.5">
-                    <span class="text-sm text-base-content/60">Expires</span>
-                    <span class="text-sm font-medium">@FormatExpDate(_accountInfo.ExpDate)</span>
-                </div>
+            </div>
+            <div class="flex justify-end">
+                <button class="btn btn-ghost btn-sm text-error hover:bg-error/10" @onclick="() => _showConfirm = true">
+                    Reset configuration
+                </button>
             </div>
         </div>
     }
 </div>
 
+<dialog class="modal @(_showConfirm ? "modal-open" : "")">
+    <div class="modal-box max-w-sm">
+        <h3 class="font-semibold text-base">Reset configuration?</h3>
+        <p class="text-sm text-base-content/60 mt-2">
+            Your provider URL, username, and password will be deleted.
+            You'll need to go through setup again.
+        </p>
+        <div class="modal-action">
+            <button class="btn btn-ghost btn-sm" @onclick="() => _showConfirm = false">Cancel</button>
+            <button class="btn btn-error btn-sm" @onclick="ResetConfig">Reset</button>
+        </div>
+    </div>
+    <div class="modal-backdrop" @onclick="() => _showConfirm = false"></div>
+</dialog>
+
 @code {
     private bool _loading = true;
+    private bool _showConfirm;
     private AccountInfoResponse? _accountInfo;
     private string? _error;
 
@@ -69,6 +93,12 @@
         {
             _loading = false;
         }
+    }
+
+    private void ResetConfig()
+    {
+        SettingsService.Reset();
+        Nav.NavigateTo("/setup");
     }
 
     private static string FormatExpDate(string expDate)

@@ -18,6 +18,7 @@ builder.Services.AddDataProtection()
     .PersistKeysToFileSystem(keysDir)
     .SetApplicationName("Cinemabox");
 builder.Services.AddSingleton<SettingsService>();
+builder.Services.AddSingleton<CatalogCache>();
 
 builder.Services.AddHttpClient<ApiClient>();
 builder.Services.AddSingleton<VodCoverService>();
