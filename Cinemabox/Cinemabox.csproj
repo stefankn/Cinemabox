@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+    <PropertyGroup>
+        <TargetFramework>net10.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <BlazorDisableThrowNavigationException>true</BlazorDisableThrowNavigationException>
+        <RuntimeIdentifiers>win-x64;osx-arm64;osx-x64</RuntimeIdentifiers>
+    </PropertyGroup>
+
+    <ItemGroup>
+      <PackageReference Include="ElectronNET.Core" Version="0.4.1" />
+      <PackageReference Include="ElectronNET.Core.AspNet" Version="0.4.1" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Folder Include="wwwroot\" />
+    </ItemGroup>
+
+    <Target Name="NpmInstall" BeforeTargets="CustomLibs">
+        <Exec Command="npm install" WorkingDirectory="../Frontend" />
+    </Target>
+
+    <Target Name="CustomLibs" BeforeTargets="Compile">
+        <Exec Condition="'$(Configuration)' != 'Release'"
+              Command="npx @tailwindcss/cli -i ./app.css -o ../Cinemabox/wwwroot/app.css"
+              WorkingDirectory="../Frontend" />
+        <Exec Condition="'$(Configuration)' == 'Release'"
+              Command="npx @tailwindcss/cli -i ./app.css -o ../Cinemabox/wwwroot/app.css --minify"
+              WorkingDirectory="../Frontend" />
+        <Exec Condition="'$(Configuration)' != 'Release'"
+              Command="./node_modules/.bin/esbuild ./app.js --bundle --outfile=../Cinemabox/wwwroot/app.js"
+              WorkingDirectory="../Frontend" />
+        <Exec Condition="'$(Configuration)' == 'Release'"
+              Command="./node_modules/.bin/esbuild ./app.js --bundle --minify --outfile=../Cinemabox/wwwroot/app.js"
+              WorkingDirectory="../Frontend" />
+    </Target>
+
+</Project>

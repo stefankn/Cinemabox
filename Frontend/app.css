@@ -1,0 +1,6 @@
+@import "tailwindcss";
+@source "../Cinemabox/Components";
+
+@plugin "./node_modules/daisyui" {
+    themes: light --default, dark --prefersdark;
+}
