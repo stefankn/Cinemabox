@@ -1,7 +1,9 @@
 @inherits LayoutComponentBase
 @using Blazor.Heroicons.Outline
 @inject SettingsService SettingsService
+@inject DownloadService DownloadService
 @inject NavigationManager Nav
+@implements IDisposable
 
 <div class="flex h-screen">
     <nav class="w-52 bg-neutral text-neutral-content flex flex-col shrink-0">
@@ -29,6 +31,57 @@
                 Series
             </NavLink>
         </div>
+
+        @if (DownloadService.Downloads.Count > 0)
+        {
+            <div class="border-t border-neutral-content/10 px-3 py-3 flex flex-col gap-2">
+                <p class="text-xs text-neutral-content/30 px-1 uppercase tracking-wider font-medium">Downloads</p>
+                @foreach (var dl in DownloadService.Downloads)
+                {
+                    <div class="flex flex-col gap-1 px-1">
+                        <div class="flex items-center justify-between gap-1">
+                            <span class="text-xs text-neutral-content/70 truncate leading-tight">@dl.Title</span>
+                            @if (dl.Status == DownloadStatus.Downloading)
+                            {
+                                <button class="shrink-0 text-neutral-content/30 hover:text-neutral-content/60 transition-colors"
+                                        title="Cancel"
+                                        @onclick="() => DownloadService.Cancel(dl.Id)">
+                                    <XMarkIcon class="size-3.5" />
+                                </button>
+                            }
+                            else
+                            {
+                                <button class="shrink-0 text-neutral-content/30 hover:text-neutral-content/60 transition-colors"
+                                        title="Dismiss"
+                                        @onclick="() => DownloadService.Dismiss(dl.Id)">
+                                    <XMarkIcon class="size-3.5" />
+                                </button>
+                            }
+                        </div>
+                        @if (dl.Status == DownloadStatus.Downloading)
+                        {
+                            @if (dl.Progress >= 0)
+                            {
+                                <div class="flex items-center gap-1.5">
+                                    <progress class="progress progress-primary h-1 flex-1" value="@dl.Progress" max="100"></progress>
+                                    <span class="text-xs text-neutral-content/30 w-7 text-right shrink-0">@dl.Progress%</span>
+                                </div>
+                            }
+                            else
+                            {
+                                <progress class="progress progress-primary h-1 w-full"></progress>
+                            }
+                        }
+                        else
+                        {
+                            <span class="text-xs @(dl.Status == DownloadStatus.Completed ? "text-success" : "text-error")">
+                                @dl.Status
+                            </span>
+                        }
+                    </div>
+                }
+            </div>
+        }
 
         <div class="px-3 py-3 border-t border-neutral-content/10">
             <button class="flex items-center gap-2.5 px-3 py-2 rounded text-sm text-neutral-content/30 hover:text-neutral-content/60 hover:bg-neutral-content/10 transition-colors w-full"
@@ -66,6 +119,18 @@
     {
         if (!SettingsService.IsConfigured)
             Nav.NavigateTo("/setup");
+
+        DownloadService.OnChanged += HandleDownloadChanged;
+    }
+
+    private void HandleDownloadChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        DownloadService.OnChanged -= HandleDownloadChanged;
     }
 
     private void ResetConfig()

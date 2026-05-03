@@ -21,6 +21,7 @@ builder.Services.AddSingleton<SettingsService>();
 
 builder.Services.AddHttpClient<ApiClient>();
 builder.Services.AddSingleton<VodCoverService>();
+builder.Services.AddSingleton<DownloadService>();
 builder.Services.AddHttpClient("vod-download");
 
 builder.Services.AddElectron();
