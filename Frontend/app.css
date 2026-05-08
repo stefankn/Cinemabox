@@ -8,6 +8,8 @@
 :root, [data-theme] {
     --color-neutral: oklch(25% 0.15 15);
     --color-neutral-content: oklch(98% 0 0);
+    --color-primary: oklch(55% 0.22 25);
+    --color-primary-content: oklch(98% 0 0);
 }
 
 @utility scrollbar-none {

@@ -206,7 +206,7 @@
                                 {
                                     <MetaRow Label="Rated" Value="@info.MpaaRating" />
                                 }
-                                @if (_vodInfo.MovieData?.ContainerExtension is { } fmt && !string.IsNullOrWhiteSpace(fmt))
+                                @if (_vodInfo?.MovieData?.ContainerExtension is { } fmt && !string.IsNullOrWhiteSpace(fmt))
                                 {
                                     <MetaRow Label="Format" Value="@fmt.ToUpperInvariant()" />
                                 }
