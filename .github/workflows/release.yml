@@ -30,7 +30,7 @@ jobs:
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
-          files: Cinemabox/bin/Release/net10.0/osx-arm64/publish/*.dmg
+          files: Cinemabox/bin/Debug/net10.0/osx-arm64/publish/*.dmg
 
   build-windows:
     runs-on: windows-latest
@@ -53,4 +53,4 @@ jobs:
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
-          files: Cinemabox/bin/Release/net10.0/win-x64/publish/*.exe
+          files: Cinemabox/bin/Debug/net10.0/win-x64/publish/*.exe
