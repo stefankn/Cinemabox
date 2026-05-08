@@ -216,10 +216,10 @@
                                                         var epExt = episode.ContainerExtension ?? "mkv";
                                                         <div class="flex items-center gap-2 px-3 py-2">
                                                             <span class="text-xs text-base-content/30 w-5 shrink-0 text-right">@episode.EpisodeNum</span>
-                                                            <span class="text-xs text-base-content/80 flex-1 min-w-0 truncate">@epTitle</span>
+                                                            <span class="text-xs text-base-content/80 flex-1 min-w-0 overflow-x-auto whitespace-nowrap scrollbar-none">@epTitle</span>
                                                             @if (!string.IsNullOrEmpty(epUrl))
                                                             {
-                                                                <button class="shrink-0 text-base-content/30 hover:text-base-content/60 transition-colors"
+                                                                <button class="shrink-0 !cursor-pointer text-base-content/30 hover:text-base-content/60 transition-colors"
                                                                         title="Copy link"
                                                                         @onclick="() => CopyEpisodeLink(episode.Id!, epUrl)">
                                                                     @if (_copiedEpisodeId == episode.Id)
@@ -231,10 +231,10 @@
                                                                         <ClipboardIcon class="size-3.5" />
                                                                     }
                                                                 </button>
-                                                                <button class="shrink-0 text-base-content/30 hover:text-base-content/60 transition-colors"
+                                                                <button class="shrink-0 !cursor-pointer btn btn-xs btn-primary gap-1"
                                                                         title="Download"
                                                                         @onclick="() => StartDownload(epUrl, epTitle, epExt)">
-                                                                    <ArrowDownTrayIcon class="size-3.5" />
+                                                                    <ArrowDownTrayIcon class="size-3" />
                                                                 </button>
                                                             }
                                                         </div>
@@ -264,10 +264,10 @@
                                             var epExt = episode.ContainerExtension ?? "mkv";
                                             <div class="flex items-center gap-2 px-3 py-2">
                                                 <span class="text-xs text-base-content/30 w-5 shrink-0 text-right">@episode.EpisodeNum</span>
-                                                <span class="text-xs text-base-content/80 flex-1 min-w-0 truncate">@epTitle</span>
+                                                <span class="text-xs text-base-content/80 flex-1 min-w-0 overflow-x-auto whitespace-nowrap scrollbar-none">@epTitle</span>
                                                 @if (!string.IsNullOrEmpty(epUrl))
                                                 {
-                                                    <button class="shrink-0 text-base-content/30 hover:text-base-content/60 transition-colors"
+                                                    <button class="shrink-0 !cursor-pointer text-base-content/30 hover:text-base-content/60 transition-colors"
                                                             title="Copy link"
                                                             @onclick="() => CopyEpisodeLink(episode.Id!, epUrl)">
                                                         @if (_copiedEpisodeId == episode.Id)
@@ -279,10 +279,11 @@
                                                             <ClipboardIcon class="size-3.5" />
                                                         }
                                                     </button>
-                                                    <button class="shrink-0 text-base-content/30 hover:text-base-content/60 transition-colors"
+                                                    <button class="shrink-0 !cursor-pointer btn btn-xs btn-primary gap-1"
                                                             title="Download"
                                                             @onclick="() => StartDownload(epUrl, epTitle, epExt)">
-                                                        <ArrowDownTrayIcon class="size-3.5" />
+                                                        <ArrowDownTrayIcon class="size-3" />
+                                                        Download
                                                     </button>
                                                 }
                                             </div>

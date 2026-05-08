@@ -4,3 +4,15 @@
 @plugin "./node_modules/daisyui" {
     themes: light --default, dark --prefersdark;
 }
+
+:root, [data-theme] {
+    --color-neutral: oklch(25% 0.15 15);
+    --color-neutral-content: oklch(98% 0 0);
+}
+
+@utility scrollbar-none {
+    scrollbar-width: none;
+    &::-webkit-scrollbar {
+        display: none;
+    }
+}
