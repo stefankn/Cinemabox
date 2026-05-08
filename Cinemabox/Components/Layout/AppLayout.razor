@@ -34,31 +34,29 @@
 
         @if (DownloadService.Downloads.Count > 0)
         {
-            <div class="border-t border-neutral-content/10 px-3 py-3 flex flex-col gap-2">
-                <p class="text-xs text-neutral-content px-1 uppercase tracking-wider font-black">Downloads</p>
-                @foreach (var dl in DownloadService.Downloads)
+            <div class="border-t border-neutral-content/10 px-3 py-3 flex flex-col gap-2 min-h-0">
+                <p class="text-xs text-neutral-content px-1 uppercase tracking-wider font-black shrink-0">Downloads</p>
+                <div class="overflow-y-auto flex flex-col gap-2 scrollbar-none">
+                @foreach (var dl in DownloadService.Downloads.OrderBy(d => d.Status switch {
+                    DownloadStatus.Downloading => 0,
+                    DownloadStatus.Queued => 1,
+                    _ => 2
+                }))
                 {
                     <div class="flex flex-col gap-1 px-1">
                         <div class="flex items-center justify-between gap-1">
                             <span class="text-xs text-neutral-content/90 leading-snug line-clamp-2">@dl.Title</span>
-                            @if (dl.Status == DownloadStatus.Downloading)
-                            {
-                                <button class="shrink-0 !cursor-pointer text-neutral-content/60 hover:text-neutral-content transition-colors"
-                                        title="Cancel"
-                                        @onclick="() => DownloadService.Cancel(dl.Id)">
-                                    <XMarkIcon class="size-3.5" />
-                                </button>
-                            }
-                            else
-                            {
-                                <button class="shrink-0 !cursor-pointer text-neutral-content/60 hover:text-neutral-content transition-colors"
-                                        title="Dismiss"
-                                        @onclick="() => DownloadService.Dismiss(dl.Id)">
-                                    <XMarkIcon class="size-3.5" />
-                                </button>
-                            }
+                            <button class="shrink-0 !cursor-pointer text-neutral-content/60 hover:text-neutral-content transition-colors"
+                                    title="@(dl.Status is DownloadStatus.Downloading or DownloadStatus.Queued ? "Cancel" : "Dismiss")"
+                                    @onclick="() => { if (dl.Status is DownloadStatus.Downloading or DownloadStatus.Queued) DownloadService.Cancel(dl.Id); else DownloadService.Dismiss(dl.Id); }">
+                                <XMarkIcon class="size-3.5" />
+                            </button>
                         </div>
-                        @if (dl.Status == DownloadStatus.Downloading)
+                        @if (dl.Status == DownloadStatus.Queued)
+                        {
+                            <span class="text-xs text-neutral-content/40">Queued</span>
+                        }
+                        else if (dl.Status == DownloadStatus.Downloading)
                         {
                             @if (dl.Progress >= 0)
                             {
@@ -80,6 +78,7 @@
                         }
                     </div>
                 }
+                </div>
             </div>
         }
 

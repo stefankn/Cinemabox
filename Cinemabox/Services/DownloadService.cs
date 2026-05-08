@@ -1,13 +1,13 @@
 namespace Cinemabox.Services;
 
-public enum DownloadStatus { Downloading, Completed, Failed, Cancelled }
+public enum DownloadStatus { Queued, Downloading, Completed, Failed, Cancelled }
 
 public class DownloadTask
 {
     public Guid Id { get; } = Guid.NewGuid();
     public string Title { get; init; } = "";
     public string DestinationPath { get; init; } = "";
-    public DownloadStatus Status { get; set; } = DownloadStatus.Downloading;
+    public DownloadStatus Status { get; set; } = DownloadStatus.Queued;
     public long BytesReceived { get; set; }
     public long? TotalBytes { get; set; }
     public int Progress => TotalBytes is > 0 ? (int)(BytesReceived * 100 / TotalBytes.Value) : -1;
@@ -18,6 +18,7 @@ public class DownloadService
 {
     private readonly IHttpClientFactory _httpClientFactory;
     private readonly List<DownloadTask> _downloads = [];
+    private readonly SemaphoreSlim _slot = new(1, 1);
 
     public event Action? OnChanged;
 
@@ -31,7 +32,18 @@ public class DownloadService
     public async Task StartAsync(string url, string title, string destinationPath)
     {
         var task = new DownloadTask { Title = title, DestinationPath = destinationPath };
-        _downloads.Insert(0, task);
+        _downloads.Add(task);
+        OnChanged?.Invoke();
+
+        await _slot.WaitAsync(task.Cts.Token);
+        if (task.Cts.Token.IsCancellationRequested)
+        {
+            task.Status = DownloadStatus.Cancelled;
+            OnChanged?.Invoke();
+            return;
+        }
+
+        task.Status = DownloadStatus.Downloading;
         OnChanged?.Invoke();
 
         try
@@ -66,6 +78,10 @@ public class DownloadService
             task.Status = DownloadStatus.Failed;
             TryDeletePartial(task.DestinationPath);
         }
+        finally
+        {
+            _slot.Release();
+        }
 
         OnChanged?.Invoke();
     }
@@ -78,7 +94,7 @@ public class DownloadService
     public void Dismiss(Guid id)
     {
         var task = _downloads.FirstOrDefault(d => d.Id == id);
-        if (task is null || task.Status == DownloadStatus.Downloading) return;
+        if (task is null || task.Status is DownloadStatus.Downloading or DownloadStatus.Queued) return;
         _downloads.Remove(task);
         OnChanged?.Invoke();
     }
