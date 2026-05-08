@@ -23,7 +23,7 @@ builder.Services.AddSingleton<CatalogCache>();
 builder.Services.AddHttpClient<ApiClient>();
 builder.Services.AddSingleton<VodCoverService>();
 builder.Services.AddSingleton<DownloadService>();
-builder.Services.AddHttpClient("vod-download");
+builder.Services.AddHttpClient("vod-covers");
 
 builder.Services.AddElectron();
 builder.WebHost.UseElectron(args, async () =>
@@ -55,6 +55,7 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 // Configure the HTTP request pipeline.
+app.UseDeveloperExceptionPage();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
@@ -66,6 +67,7 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 
 app.UseAntiforgery();
 
+app.UseStaticFiles();
 app.MapStaticAssets();
 app
     .MapRazorComponents<App>()
