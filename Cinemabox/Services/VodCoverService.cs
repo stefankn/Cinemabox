@@ -73,6 +73,15 @@ public class VodCoverService
         await Task.WhenAll(tasks);
     }
 
+    public async Task CacheAllAsync(string categoryId, IEnumerable<SeriesResponse> series)
+    {
+        var tasks = series
+            .Where(s => s.SeriesId.HasValue && !string.IsNullOrEmpty(s.Cover))
+            .Select(s => CacheCoverAsync(categoryId, s.SeriesId!.Value, s.Cover));
+
+        await Task.WhenAll(tasks);
+    }
+
     private static string? GetFileName(string categoryId, int streamId, string? remoteUrl)
     {
         if (string.IsNullOrEmpty(remoteUrl)) return null;

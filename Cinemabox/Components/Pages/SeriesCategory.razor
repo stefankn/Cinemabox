@@ -1,0 +1,430 @@
+@page "/series/{CategoryId}"
+@layout AppLayout
+@using Blazor.Heroicons.Outline
+@using System.Text.RegularExpressions
+@inject ApiClient ApiClient
+@inject CatalogCache CatalogCache
+@inject VodCoverService VodCovers
+@inject SettingsService SettingsService
+@inject DownloadService DownloadService
+@inject IJSRuntime JS
+@using ElectronNET.API
+@using ElectronNET.API.Entities
+
+<PageTitle>@_categoryName — Cinemabox</PageTitle>
+
+<div class="flex flex-col h-full">
+    <div class="flex items-center gap-2 px-6 py-3 border-b border-base-300 shrink-0">
+        <a href="/series" class="flex items-center gap-1 text-sm text-base-content/50 hover:text-base-content transition-colors">
+            <ChevronLeftIcon class="size-4" />
+            Series
+        </a>
+        <span class="text-base-content/30 text-sm">/</span>
+        <span class="text-sm font-medium flex-1">@_categoryName</span>
+        @if (!_loading && _error is null)
+        {
+            <label class="input input-sm w-48">
+                <MagnifyingGlassIcon class="size-3.5 text-base-content/40 shrink-0" />
+                <input type="search"
+                       placeholder="Search…"
+                       @bind="_search"
+                       @bind:event="oninput" />
+            </label>
+        }
+    </div>
+
+    <div class="flex flex-1 overflow-hidden">
+        <div class="flex-1 overflow-y-auto p-6">
+            @if (_loading)
+            {
+                <div class="flex items-center justify-center h-full">
+                    <span class="loading loading-spinner loading-md text-base-content/30"></span>
+                </div>
+            }
+            else if (_error is not null)
+            {
+                <div class="flex flex-col items-center justify-center h-full gap-3">
+                    <p class="text-sm text-error">@_error</p>
+                    <button class="btn btn-ghost btn-xs" @onclick="LoadSeries">Retry</button>
+                </div>
+            }
+            else if (_series.Count == 0)
+            {
+                <div class="flex items-center justify-center h-full">
+                    <p class="text-sm text-base-content/30">No series in this category.</p>
+                </div>
+            }
+            else
+            {
+                var filtered = Filtered;
+                @if (filtered.Count == 0)
+                {
+                    <p class="text-sm text-base-content/30 mt-2">No series match "@_search".</p>
+                }
+                else
+                {
+                    <div class="grid gap-4" style="grid-template-columns: repeat(auto-fill, minmax(140px, 1fr))">
+                        @foreach (var s in filtered)
+                        {
+                            var coverUrl = VodCovers.GetCoverUrl(CategoryId, s.SeriesId ?? 0, s.Cover);
+                            <div class="flex flex-col gap-2 cursor-pointer group" @onclick="() => SelectSeries(s)">
+                                <div class="aspect-[2/3] rounded-lg overflow-hidden bg-base-300 @(_selectedSeries?.SeriesId == s.SeriesId ? "ring-2 ring-primary" : "")">
+                                    @if (!string.IsNullOrEmpty(coverUrl))
+                                    {
+                                        <img src="@coverUrl"
+                                             alt="@s.Name"
+                                             class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" />
+                                    }
+                                    else
+                                    {
+                                        <div class="w-full h-full flex items-center justify-center">
+                                            <TvIcon class="size-8 text-base-content/20" />
+                                        </div>
+                                    }
+                                </div>
+                                <p class="text-xs text-base-content/70 leading-snug line-clamp-2">@CleanTitle(s.Name ?? "")</p>
+                            </div>
+                        }
+                    </div>
+                }
+            }
+        </div>
+
+        @if (_selectedSeries is not null)
+        {
+            <div class="w-[420px] shrink-0 border-l border-base-300 overflow-y-auto flex flex-col">
+                <div class="flex items-center justify-between px-4 py-3 border-b border-base-300 shrink-0">
+                    <span class="text-base font-semibold truncate">@CleanTitle(_selectedSeries.Name ?? "")</span>
+                    <button class="btn btn-ghost btn-xs btn-square ml-2 shrink-0" @onclick="() => _selectedSeries = null">
+                        <XMarkIcon class="size-4" />
+                    </button>
+                </div>
+
+                @if (_detailLoading)
+                {
+                    <div class="flex items-center justify-center flex-1">
+                        <span class="loading loading-spinner loading-md text-base-content/30"></span>
+                    </div>
+                }
+                else if (_detailError is not null)
+                {
+                    <div class="flex flex-col items-center justify-center flex-1 gap-3 p-4">
+                        <p class="text-sm text-error text-center">@_detailError</p>
+                        <button class="btn btn-ghost btn-xs" @onclick="() => SelectSeries(_selectedSeries)">Retry</button>
+                    </div>
+                }
+                else if (_seriesInfo is not null)
+                {
+                    <div class="p-4 flex flex-col gap-4">
+                        <div class="flex gap-4">
+                            <div class="w-28 shrink-0">
+                                <div class="aspect-[2/3] rounded-lg overflow-hidden bg-base-300">
+                                    @{
+                                        var detailCover = VodCovers.GetCoverUrl(CategoryId, _selectedSeries.SeriesId ?? 0, _selectedSeries.Cover);
+                                    }
+                                    @if (!string.IsNullOrEmpty(detailCover))
+                                    {
+                                        <img src="@detailCover" alt="@CleanTitle(_selectedSeries.Name ?? "")"
+                                             class="w-full h-full object-cover" />
+                                    }
+                                    else
+                                    {
+                                        <div class="w-full h-full flex items-center justify-center">
+                                            <TvIcon class="size-8 text-base-content/20" />
+                                        </div>
+                                    }
+                                </div>
+                            </div>
+                            @if (!string.IsNullOrWhiteSpace(_seriesInfo.Info?.Plot))
+                            {
+                                <p class="text-xs text-base-content/70 leading-relaxed min-w-0">@_seriesInfo.Info.Plot</p>
+                            }
+                        </div>
+
+                        @{
+                            var info = _seriesInfo.Info;
+                        }
+                        @if (info is not null)
+                        {
+                            <div class="flex flex-col divide-y divide-base-300 border border-base-300 rounded-lg">
+                                @if (!string.IsNullOrWhiteSpace(info.Rating))
+                                {
+                                    <MetaRow Label="Rating" Value="@info.Rating" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(info.ReleaseDate))
+                                {
+                                    <MetaRow Label="Released" Value="@info.ReleaseDate" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(info.EpisodeRunTime))
+                                {
+                                    <MetaRow Label="Runtime" Value="@($"{info.EpisodeRunTime} min / ep")" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(info.Genre))
+                                {
+                                    <MetaRow Label="Genre" Value="@info.Genre" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(info.Director))
+                                {
+                                    <MetaRow Label="Director" Value="@info.Director" />
+                                }
+                                @if (!string.IsNullOrWhiteSpace(info.Cast))
+                                {
+                                    <MetaRow Label="Cast" Value="@info.Cast" />
+                                }
+                            </div>
+                        }
+
+                        @if (_seriesInfo.Episodes is { Count: > 0 })
+                        {
+                            var knownSeasonKeys = (_seriesInfo.Seasons ?? [])
+                                .Select(s => s.SeasonNumber?.ToString() ?? "")
+                                .ToHashSet();
+                            var orphanedEpisodes = _seriesInfo.Episodes
+                                .Where(kv => !knownSeasonKeys.Contains(kv.Key))
+                                .SelectMany(kv => kv.Value)
+                                .OrderBy(e => e.Season).ThenBy(e => e.EpisodeNum)
+                                .ToList();
+
+                            @if (_seriesInfo.Seasons is { Count: > 0 } seasons)
+                            {
+                                <div class="flex flex-col gap-1">
+                                    <p class="text-xs text-base-content/40 uppercase tracking-wider font-medium px-1">Seasons</p>
+                                    @foreach (var season in seasons.OrderBy(s => s.SeasonNumber))
+                                    {
+                                        var seasonNum = season.SeasonNumber?.ToString() ?? "";
+                                        var episodes = _seriesInfo.Episodes.TryGetValue(seasonNum, out var eps)
+                                            ? eps.OrderBy(e => e.EpisodeNum).ToList()
+                                            : [];
+                                        <details class="group border border-base-300 rounded-lg overflow-hidden">
+                                            <summary class="flex items-center justify-between px-3 py-2.5 cursor-pointer hover:bg-base-200 transition-colors list-none">
+                                                <span class="text-sm font-medium">@(season.Name ?? $"Season {season.SeasonNumber}")</span>
+                                                <div class="flex items-center gap-2 shrink-0">
+                                                    @if (episodes.Count > 0)
+                                                    {
+                                                        <span class="text-xs text-base-content/40">@episodes.Count ep</span>
+                                                    }
+                                                    <ChevronRightIcon class="size-3.5 text-base-content/40 transition-transform group-open:rotate-90" />
+                                                </div>
+                                            </summary>
+                                            @if (episodes.Count > 0)
+                                            {
+                                                <div class="divide-y divide-base-300 border-t border-base-300">
+                                                    @foreach (var episode in episodes)
+                                                    {
+                                                        var epUrl = BuildEpisodeUrl(episode);
+                                                        var epTitle = episode.Title is not null ? CleanTitle(episode.Title) : $"Episode {episode.EpisodeNum}";
+                                                        var epExt = episode.ContainerExtension ?? "mkv";
+                                                        <div class="flex items-center gap-2 px-3 py-2">
+                                                            <span class="text-xs text-base-content/30 w-5 shrink-0 text-right">@episode.EpisodeNum</span>
+                                                            <span class="text-xs text-base-content/80 flex-1 min-w-0 truncate">@epTitle</span>
+                                                            @if (!string.IsNullOrEmpty(epUrl))
+                                                            {
+                                                                <button class="shrink-0 text-base-content/30 hover:text-base-content/60 transition-colors"
+                                                                        title="Copy link"
+                                                                        @onclick="() => CopyEpisodeLink(episode.Id!, epUrl)">
+                                                                    @if (_copiedEpisodeId == episode.Id)
+                                                                    {
+                                                                        <CheckIcon class="size-3.5 text-success" />
+                                                                    }
+                                                                    else
+                                                                    {
+                                                                        <ClipboardIcon class="size-3.5" />
+                                                                    }
+                                                                </button>
+                                                                <button class="shrink-0 text-base-content/30 hover:text-base-content/60 transition-colors"
+                                                                        title="Download"
+                                                                        @onclick="() => StartDownload(epUrl, epTitle, epExt)">
+                                                                    <ArrowDownTrayIcon class="size-3.5" />
+                                                                </button>
+                                                            }
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="px-3 py-2 border-t border-base-300">
+                                                    <p class="text-xs text-base-content/30">No episodes available.</p>
+                                                </div>
+                                            }
+                                        </details>
+                                    }
+                                </div>
+                            }
+
+                            @if (orphanedEpisodes.Count > 0)
+                            {
+                                <div class="flex flex-col gap-1">
+                                    <p class="text-xs text-base-content/40 uppercase tracking-wider font-medium px-1">Episodes</p>
+                                    <div class="border border-base-300 rounded-lg divide-y divide-base-300">
+                                        @foreach (var episode in orphanedEpisodes)
+                                        {
+                                            var epUrl = BuildEpisodeUrl(episode);
+                                            var epTitle = episode.Title is not null ? CleanTitle(episode.Title) : $"Episode {episode.EpisodeNum}";
+                                            var epExt = episode.ContainerExtension ?? "mkv";
+                                            <div class="flex items-center gap-2 px-3 py-2">
+                                                <span class="text-xs text-base-content/30 w-5 shrink-0 text-right">@episode.EpisodeNum</span>
+                                                <span class="text-xs text-base-content/80 flex-1 min-w-0 truncate">@epTitle</span>
+                                                @if (!string.IsNullOrEmpty(epUrl))
+                                                {
+                                                    <button class="shrink-0 text-base-content/30 hover:text-base-content/60 transition-colors"
+                                                            title="Copy link"
+                                                            @onclick="() => CopyEpisodeLink(episode.Id!, epUrl)">
+                                                        @if (_copiedEpisodeId == episode.Id)
+                                                        {
+                                                            <CheckIcon class="size-3.5 text-success" />
+                                                        }
+                                                        else
+                                                        {
+                                                            <ClipboardIcon class="size-3.5" />
+                                                        }
+                                                    </button>
+                                                    <button class="shrink-0 text-base-content/30 hover:text-base-content/60 transition-colors"
+                                                            title="Download"
+                                                            @onclick="() => StartDownload(epUrl, epTitle, epExt)">
+                                                        <ArrowDownTrayIcon class="size-3.5" />
+                                                    </button>
+                                                }
+                                            </div>
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@code {
+    [Parameter] public string CategoryId { get; set; } = "";
+
+    private static readonly Regex PrefixPattern = new(@"^(┃[^┃]+┃\s*)+", RegexOptions.Compiled);
+    private static readonly Regex InvalidFileCharsPattern = new(@"[\\/:*?""<>|]", RegexOptions.Compiled);
+    private static string CleanTitle(string name) => PrefixPattern.Replace(name, "").TrimStart();
+    private static string SafeFilename(string title) => InvalidFileCharsPattern.Replace(title, "").Trim();
+
+    private bool _loading = true;
+    private List<SeriesResponse> _series = [];
+    private string _categoryName = "";
+    private string _search = "";
+    private string? _error;
+
+    private SeriesResponse? _selectedSeries;
+    private SeriesInfoResponse? _seriesInfo;
+    private bool _detailLoading;
+    private string? _detailError;
+
+    private string? _copiedEpisodeId;
+
+    private List<SeriesResponse> Filtered => string.IsNullOrWhiteSpace(_search)
+        ? _series
+        : _series.Where(s => FuzzyMatch(CleanTitle(s.Name ?? ""), _search)).ToList();
+
+    private static bool FuzzyMatch(string text, string query)
+    {
+        var t = 0;
+        foreach (var c in query)
+        {
+            t = text.IndexOf(c.ToString(), t, StringComparison.OrdinalIgnoreCase);
+            if (t < 0) return false;
+            t++;
+        }
+        return true;
+    }
+
+    private string BuildEpisodeUrl(SeriesEpisode episode)
+    {
+        var s = SettingsService.Settings;
+        if (s is null || string.IsNullOrEmpty(episode.Id) || string.IsNullOrEmpty(episode.ContainerExtension))
+            return string.Empty;
+        return $"{s.BaseUrl.TrimEnd('/')}/series/{Uri.EscapeDataString(s.Username)}/{Uri.EscapeDataString(s.Password)}/{episode.Id}.{episode.ContainerExtension}";
+    }
+
+    private async Task CopyEpisodeLink(string episodeId, string url)
+    {
+        await JS.InvokeVoidAsync("navigator.clipboard.writeText", url);
+        _copiedEpisodeId = episodeId;
+        StateHasChanged();
+        await Task.Delay(2000);
+        _copiedEpisodeId = null;
+    }
+
+    private async Task StartDownload(string url, string title, string ext)
+    {
+        var filename = $"{SafeFilename(title)}.{ext}";
+        var defaultPath = Path.Combine(
+            Environment.GetFolderPath(Environment.SpecialFolder.UserProfile),
+            "Downloads", filename);
+
+        var savePath = await Electron.Dialog.ShowSaveDialogAsync(
+            Electron.WindowManager.BrowserWindows.First(),
+            new SaveDialogOptions
+            {
+                Title = "Save episode",
+                DefaultPath = defaultPath,
+                Filters = [new FileFilter { Name = ext.ToUpperInvariant(), Extensions = [ext] }]
+            });
+
+        if (string.IsNullOrEmpty(savePath)) return;
+
+        _ = DownloadService.StartAsync(url, title, savePath);
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadSeries();
+    }
+
+    private async Task LoadSeries()
+    {
+        _loading = true;
+        _error = null;
+        try
+        {
+            var categoriesTask = CatalogCache.GetSeriesCategoriesAsync();
+            var seriesTask = ApiClient.GetSeriesAsync(CategoryId);
+            await Task.WhenAll(categoriesTask, seriesTask);
+            _categoryName = categoriesTask.Result.FirstOrDefault(c => c.CategoryId == CategoryId)?.CategoryName ?? CategoryId;
+            _series = seriesTask.Result;
+            _ = VodCovers.CacheAllAsync(CategoryId, _series);
+        }
+        catch
+        {
+            _error = "Failed to load series.";
+        }
+        finally
+        {
+            _loading = false;
+        }
+    }
+
+    private async Task SelectSeries(SeriesResponse series)
+    {
+        if (_selectedSeries?.SeriesId == series.SeriesId)
+        {
+            _selectedSeries = null;
+            return;
+        }
+
+        _selectedSeries = series;
+        _seriesInfo = null;
+        _detailError = null;
+        _detailLoading = true;
+        _copiedEpisodeId = null;
+        try
+        {
+            _seriesInfo = await ApiClient.GetSeriesInfoAsync(series.SeriesId ?? 0);
+        }
+        catch
+        {
+            _detailError = "Failed to load series details.";
+        }
+        finally
+        {
+            _detailLoading = false;
+        }
+    }
+}
