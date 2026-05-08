@@ -5,7 +5,6 @@ using Cinemabox.Services;
 using App = Cinemabox.Components.App;
 
 var builder = WebApplication.CreateBuilder(args);
-builder.WebHost.UseEnvironment("Development");
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
