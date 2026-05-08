@@ -25,12 +25,12 @@ jobs:
           node-version: '22'
 
       - name: Publish macOS (arm64)
-        run: dotnet publish Cinemabox/Cinemabox.csproj -r osx-arm64 --self-contained -c Debug
+        run: dotnet publish Cinemabox/Cinemabox.csproj -r osx-arm64 --self-contained -c Release
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
-          files: Cinemabox/bin/Debug/net10.0/osx-arm64/publish/*.dmg
+          files: Cinemabox/bin/Release/net10.0/osx-arm64/publish/*.dmg
 
   build-windows:
     runs-on: windows-latest
@@ -48,9 +48,9 @@ jobs:
           node-version: '22'
 
       - name: Publish Windows (x64)
-        run: dotnet publish Cinemabox/Cinemabox.csproj -r win-x64 --self-contained -c Debug
+        run: dotnet publish Cinemabox/Cinemabox.csproj -r win-x64 --self-contained -c Release
 
       - name: Upload to release
         uses: softprops/action-gh-release@v2
         with:
-          files: Cinemabox/bin/Debug/net10.0/win-x64/publish/*.exe
+          files: Cinemabox/bin/Release/net10.0/win-x64/publish/*.exe
