@@ -18,6 +18,13 @@
       <Folder Include="wwwroot\" />
     </ItemGroup>
 
+    <Target Name="CopyIconsToBuildDir" BeforeTargets="ElectronPublishApp">
+        <MakeDir Directories="$(_OriginalPublishDir)build\" />
+        <Copy SourceFiles="build\icon.icns" DestinationFolder="$(_OriginalPublishDir)build\" />
+        <Copy SourceFiles="build\icon.ico" DestinationFolder="$(_OriginalPublishDir)build\" />
+        <Copy SourceFiles="build\icon.png" DestinationFolder="$(_OriginalPublishDir)build\" />
+    </Target>
+
     <Target Name="NpmInstall" BeforeTargets="CustomLibs">
         <Exec Command="npm install" WorkingDirectory="../Frontend" />
     </Target>

@@ -1,19 +1,32 @@
 {
   "$schema": "https://raw.githubusercontent.com/electron-userland/electron-builder/refs/heads/master/packages/app-builder-lib/scheme.json",
-  "compression": "maximum",
-  "linux": {
-    "target": [
-      "tar.xz"
-    ],
-    "executableArgs": [ "--no-sandbox" ],
-    "artifactName": "${name}-${arch}-${version}.${ext}"
+  "compression": "normal",
+  "files": [
+    "main.js",
+    "package.json",
+    "api/**",
+    "scripts/**",
+    "splashscreen/**",
+    "ElectronHostHook/**"
+  ],
+  "mac": {
+    "icon": "build/icon.icns"
   },
   "win": {
+    "icon": "build/icon.ico",
     "target": [
       {
         "target": "portable",
         "arch": "x64"
       }
     ]
+  },
+  "linux": {
+    "icon": "build/icon.png",
+    "target": [
+      "tar.xz"
+    ],
+    "executableArgs": [ "--no-sandbox" ],
+    "artifactName": "${name}-${arch}-${version}.${ext}"
   }
 }

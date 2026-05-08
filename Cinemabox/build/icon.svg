@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <!-- Red background with rounded corners -->
+  <rect width="1024" height="1024" rx="180" ry="180" fill="#c0392b"/>
+
+  <!-- TV body -->
+  <rect x="192" y="300" width="640" height="420" rx="36" ry="36" fill="white"/>
+
+  <!-- TV screen -->
+  <rect x="232" y="336" width="560" height="310" rx="16" ry="16" fill="#1a1a2e"/>
+
+  <!-- Screen shine -->
+  <rect x="244" y="348" width="180" height="60" rx="8" ry="8" fill="white" opacity="0.08"/>
+
+  <!-- TV stand neck -->
+  <rect x="472" y="720" width="80" height="70" rx="8" ry="8" fill="white"/>
+
+  <!-- TV stand base -->
+  <rect x="340" y="790" width="344" height="44" rx="22" ry="22" fill="white"/>
+
+  <!-- TV antenna left -->
+  <line x1="400" y1="300" x2="320" y2="180" stroke="white" stroke-width="28" stroke-linecap="round"/>
+
+  <!-- TV antenna right -->
+  <line x1="624" y1="300" x2="704" y2="180" stroke="white" stroke-width="28" stroke-linecap="round"/>
+</svg>
