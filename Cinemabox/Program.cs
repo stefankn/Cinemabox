@@ -5,6 +5,7 @@ using Cinemabox.Services;
 using App = Cinemabox.Components.App;
 
 var builder = WebApplication.CreateBuilder(args);
+builder.WebHost.UseEnvironment("Development");
 
 // Add services to the container.
 builder.Services.AddRazorComponents()
@@ -55,7 +56,6 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 // Configure the HTTP request pipeline.
-app.UseDeveloperExceptionPage();
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);

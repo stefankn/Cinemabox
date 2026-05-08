@@ -16,9 +16,7 @@
 
     <ItemGroup>
       <Folder Include="wwwroot\" />
-      <Content Include="wwwroot\app.css" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
-      <Content Include="wwwroot\app.js" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="Always" />
-    </ItemGroup>
+</ItemGroup>
 
     <Target Name="CopyIconsToBuildDir" BeforeTargets="ElectronPublishApp">
         <MakeDir Directories="$(_OriginalPublishDir)build\" />
