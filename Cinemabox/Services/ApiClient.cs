@@ -10,11 +10,11 @@ public class ApiClient
 
     public ApiClient(HttpClient httpClient, SettingsService settingsService)
     {
-        var settings = settingsService.Settings
-            ?? throw new InvalidOperationException("Application is not configured.");
-        _username = settings.Username;
-        _password = settings.Password;
-        httpClient.BaseAddress = new Uri(settings.BaseUrl);
+        var settings = settingsService.Settings;
+        _username = settings?.Username ?? string.Empty;
+        _password = settings?.Password ?? string.Empty;
+        if (settings is not null)
+            httpClient.BaseAddress = new Uri(settings.BaseUrl);
         _httpClient = httpClient;
     }
 
