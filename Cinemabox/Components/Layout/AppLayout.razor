@@ -1,63 +1,67 @@
-@inherits LayoutComponentBase
 @using Blazor.Heroicons.Outline
 @inject SettingsService SettingsService
 @inject DownloadService DownloadService
-@inject NavigationManager Nav
 @implements IDisposable
 
-<div class="flex h-screen">
-    <nav class="w-52 bg-neutral text-neutral-content flex flex-col shrink-0">
-        <div class="px-5 py-4 border-b border-neutral-content/10">
-            <span class="font-semibold text-sm">Cinemabox</span>
-        </div>
+@if (_showSetup)
+{
+    <Setup OnComplete="() => _showSetup = false" />
+}
+else
+{
+    <div class="flex h-screen">
+        <nav class="w-52 bg-neutral text-neutral-content flex flex-col shrink-0">
+            <div class="px-5 py-4 border-b border-neutral-content/10">
+                <span class="font-semibold text-sm">Cinemabox</span>
+            </div>
 
-        <div class="flex flex-col gap-0.5 px-2 py-3 flex-1">
-            <NavLink href="/" Match="NavLinkMatch.All"
-                     class="flex items-center gap-2.5 px-3 py-2 rounded text-sm text-neutral-content/60 hover:text-neutral-content hover:bg-neutral-content/10 transition-colors"
-                     ActiveClass="!text-neutral-content !bg-neutral-content/15">
-                <HomeIcon class="size-4 shrink-0" />
-                Home
-            </NavLink>
-            <NavLink href="/movies"
-                     class="flex items-center gap-2.5 px-3 py-2 rounded text-sm text-neutral-content/60 hover:text-neutral-content hover:bg-neutral-content/10 transition-colors"
-                     ActiveClass="!text-neutral-content !bg-neutral-content/15">
-                <FilmIcon class="size-4 shrink-0" />
-                Movies
-            </NavLink>
-            <NavLink href="/series"
-                     class="flex items-center gap-2.5 px-3 py-2 rounded text-sm text-neutral-content/60 hover:text-neutral-content hover:bg-neutral-content/10 transition-colors"
-                     ActiveClass="!text-neutral-content !bg-neutral-content/15">
-                <TvIcon class="size-4 shrink-0" />
-                Series
-            </NavLink>
-            <NavLink href="/downloads"
-                     class="flex items-center gap-2.5 px-3 py-2 rounded text-sm text-neutral-content/60 hover:text-neutral-content hover:bg-neutral-content/10 transition-colors"
-                     ActiveClass="!text-neutral-content !bg-neutral-content/15">
-                <ArrowDownTrayIcon class="size-4 shrink-0" />
-                <span class="flex-1">Downloads</span>
-                @{
-                    var activeCount = DownloadService.Downloads.Count(d => d.Status is DownloadStatus.Downloading or DownloadStatus.Queued);
-                }
-                @if (activeCount > 0)
-                {
-                    <span class="badge badge-sm badge-primary">@activeCount</span>
-                }
-            </NavLink>
-        </div>
+            <div class="flex flex-col gap-0.5 px-2 py-3 flex-1">
+                <button @onclick='() => _section = "home"'
+                        class="flex items-center gap-2.5 px-3 py-2 rounded text-sm w-full text-left transition-colors @(_section == "home" ? "text-neutral-content bg-neutral-content/15" : "text-neutral-content/60 hover:text-neutral-content hover:bg-neutral-content/10")">
+                    <HomeIcon class="size-4 shrink-0" />
+                    Home
+                </button>
+                <button @onclick='() => _section = "movies"'
+                        class="flex items-center gap-2.5 px-3 py-2 rounded text-sm w-full text-left transition-colors @(_section == "movies" ? "text-neutral-content bg-neutral-content/15" : "text-neutral-content/60 hover:text-neutral-content hover:bg-neutral-content/10")">
+                    <FilmIcon class="size-4 shrink-0" />
+                    Movies
+                </button>
+                <button @onclick='() => _section = "series"'
+                        class="flex items-center gap-2.5 px-3 py-2 rounded text-sm w-full text-left transition-colors @(_section == "series" ? "text-neutral-content bg-neutral-content/15" : "text-neutral-content/60 hover:text-neutral-content hover:bg-neutral-content/10")">
+                    <TvIcon class="size-4 shrink-0" />
+                    Series
+                </button>
+                <button @onclick='() => _section = "downloads"'
+                        class="flex items-center gap-2.5 px-3 py-2 rounded text-sm w-full text-left transition-colors @(_section == "downloads" ? "text-neutral-content bg-neutral-content/15" : "text-neutral-content/60 hover:text-neutral-content hover:bg-neutral-content/10")">
+                    <ArrowDownTrayIcon class="size-4 shrink-0" />
+                    <span class="flex-1 text-left">Downloads</span>
+                    @{
+                        var activeCount = DownloadService.Downloads.Count(d => d.Status is DownloadStatus.Downloading or DownloadStatus.Queued);
+                    }
+                    @if (activeCount > 0)
+                    {
+                        <span class="badge badge-sm badge-primary">@activeCount</span>
+                    }
+                </button>
+            </div>
+        </nav>
 
-    </nav>
-
-    <main class="flex-1 overflow-hidden bg-base-100">
-        @Body
-    </main>
-</div>
+        <main class="flex-1 overflow-hidden bg-base-100">
+            <div class="h-full @(_section != "home" ? "hidden" : "")"><Home OnShowSetup="() => _showSetup = true" /></div>
+            <div class="h-full @(_section != "movies" ? "hidden" : "")"><Movies /></div>
+            <div class="h-full @(_section != "series" ? "hidden" : "")"><Series /></div>
+            <div class="h-full @(_section != "downloads" ? "hidden" : "")"><Downloads /></div>
+        </main>
+    </div>
+}
 
 @code {
+    private string _section = "home";
+    private bool _showSetup;
+
     protected override void OnInitialized()
     {
-        if (!SettingsService.IsConfigured)
-            Nav.NavigateTo("/setup");
-
+        _showSetup = !SettingsService.IsConfigured;
         DownloadService.OnChanged += HandleDownloadChanged;
     }
 

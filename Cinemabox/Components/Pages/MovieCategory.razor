@@ -1,5 +1,3 @@
-@page "/movies/{CategoryId}"
-@layout AppLayout
 @using Blazor.Heroicons.Outline
 @using System.Text.RegularExpressions
 @inject ApiClient ApiClient
@@ -11,14 +9,12 @@
 @using ElectronNET.API
 @using ElectronNET.API.Entities
 
-<PageTitle>@_categoryName — Cinemabox</PageTitle>
-
 <div class="flex flex-col h-full">
     <div class="flex items-center gap-2 px-6 py-3 border-b border-base-300 shrink-0">
-        <a href="/movies" class="flex items-center gap-1 text-sm text-base-content/50 hover:text-base-content transition-colors">
+        <button @onclick="OnBack" class="flex items-center gap-1 text-sm text-base-content/50 hover:text-base-content transition-colors">
             <ChevronLeftIcon class="size-4" />
             Movies
-        </a>
+        </button>
         <span class="text-base-content/30 text-sm">/</span>
         <span class="text-sm font-medium flex-1">@_categoryName</span>
         @if (!_loading && _error is null)
@@ -221,6 +217,7 @@
 
 @code {
     [Parameter] public string CategoryId { get; set; } = "";
+    [Parameter] public EventCallback OnBack { get; set; }
 
     private static readonly Regex PrefixPattern = new(@"^(┃[^┃]+┃\s*)+", RegexOptions.Compiled);
     private static readonly Regex InvalidFileCharsPattern = new(@"[\\/:*?""<>|]", RegexOptions.Compiled);

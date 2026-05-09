@@ -1,12 +1,12 @@
-@page "/series"
-@layout AppLayout
 @using Blazor.Heroicons.Outline
 @inject CatalogCache CatalogCache
 
-<PageTitle>Series — Cinemabox</PageTitle>
-
 <div class="flex flex-col h-full">
-    @if (_loading)
+    @if (_selectedCategoryId is not null)
+    {
+        <SeriesCategory CategoryId="@_selectedCategoryId" OnBack="() => _selectedCategoryId = null" />
+    }
+    else if (_loading)
     {
         <div class="flex items-center justify-center h-full">
             <span class="loading loading-spinner loading-md text-base-content/30"></span>
@@ -26,7 +26,6 @@
                 <MagnifyingGlassIcon class="size-4 text-base-content/40 shrink-0" />
                 <input type="search"
                        placeholder="Search categories…"
-                       autofocus
                        @bind="_search"
                        @bind:event="oninput" />
             </label>
@@ -45,10 +44,10 @@
                 <div class="border border-base-300 rounded-lg divide-y divide-base-300">
                     @foreach (var category in filtered)
                     {
-                        <a href="/series/@category.CategoryId"
-                           class="flex items-center px-4 py-2.5 hover:bg-base-200 transition-colors cursor-pointer">
+                        <button class="flex items-center w-full px-4 py-2.5 hover:bg-base-200 transition-colors text-left"
+                                @onclick="() => _selectedCategoryId = category.CategoryId">
                             <span class="text-sm">@category.CategoryName</span>
-                        </a>
+                        </button>
                     }
                 </div>
             }
@@ -61,6 +60,7 @@
     private List<VodCategoryResponse> _categories = [];
     private string? _error;
     private string _search = "";
+    private string? _selectedCategoryId;
 
     private List<VodCategoryResponse> Filtered => string.IsNullOrWhiteSpace(_search)
         ? _categories

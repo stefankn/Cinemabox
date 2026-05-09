@@ -1,10 +1,6 @@
-@page "/"
-@layout AppLayout
+@using Blazor.Heroicons.Outline
 @inject SettingsService SettingsService
 @inject ApiClient ApiClient
-@inject NavigationManager Nav
-
-<PageTitle>Cinemabox</PageTitle>
 
 <div class="p-8 overflow-y-auto h-full">
     @if (_loading)
@@ -67,6 +63,8 @@
 </dialog>
 
 @code {
+    [Parameter] public EventCallback OnShowSetup { get; set; }
+
     private bool _loading = true;
     private bool _showConfirm;
     private AccountInfoResponse? _accountInfo;
@@ -95,10 +93,10 @@
         }
     }
 
-    private void ResetConfig()
+    private async Task ResetConfig()
     {
         SettingsService.Reset();
-        Nav.NavigateTo("/setup");
+        await OnShowSetup.InvokeAsync();
     }
 
     private static string FormatExpDate(string expDate)
