@@ -33,6 +33,7 @@ builder.WebHost.UseElectron(args, async () =>
         Width = 1280,
         Height = 800,
         Show = false,
+        Title = "Cinemabox",
     };
     if (OperatingSystem.IsWindows() || OperatingSystem.IsLinux())
         options.AutoHideMenuBar = true;
