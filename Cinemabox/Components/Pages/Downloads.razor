@@ -1,0 +1,172 @@
+@page "/downloads"
+@layout AppLayout
+@using Blazor.Heroicons.Outline
+@inject DownloadService DownloadService
+@implements IDisposable
+
+<PageTitle>Downloads — Cinemabox</PageTitle>
+
+<div class="flex flex-col h-full">
+    <div class="px-6 py-4 border-b border-base-200 shrink-0">
+        <h1 class="text-base font-semibold">Downloads</h1>
+    </div>
+
+    <div class="flex-1 overflow-y-auto px-6 py-4 flex flex-col gap-6">
+        @{
+            var active   = DownloadService.Downloads.Where(d => d.Status == DownloadStatus.Downloading).OrderBy(d => d.QueuedAt).ToList();
+            var queued   = DownloadService.Downloads.Where(d => d.Status == DownloadStatus.Queued).OrderBy(d => d.QueuedAt).ToList();
+            var finished = DownloadService.Downloads.Where(d => d.Status is DownloadStatus.Completed or DownloadStatus.Failed or DownloadStatus.Cancelled).OrderBy(d => d.QueuedAt).ToList();
+        }
+
+        @if (active.Count == 0 && queued.Count == 0 && finished.Count == 0)
+        {
+            <p class="text-sm text-base-content/50">No downloads.</p>
+        }
+
+        @if (active.Count > 0)
+        {
+            <div class="flex flex-col gap-1">
+                <p class="text-xs uppercase tracking-wider font-black text-base-content/40 mb-1">Downloading</p>
+                <ul class="list bg-base-200 rounded-box">
+                    @foreach (var (dl, i) in active.Select((d, i) => (d, i)))
+                    {
+                        <li class="list-row items-center @(i % 2 == 1 ? "bg-base-300/40" : "")">
+                            <div class="text-primary">
+                                <ArrowDownCircleIcon class="size-5" />
+                            </div>
+                            <div class="list-col-grow flex flex-col gap-1 min-w-0">
+                                <span class="text-sm font-medium truncate">@dl.Title</span>
+                                @if (dl.Progress >= 0)
+                                {
+                                    <div class="flex items-center gap-2">
+                                        <progress class="progress h-1.5 flex-1 [&::-webkit-progress-value]:bg-primary [&::-moz-progress-bar]:bg-primary" value="@dl.Progress" max="100"></progress>
+                                        <span class="text-xs text-base-content/60 w-8 text-right shrink-0">@dl.Progress%</span>
+                                    </div>
+                                }
+                                else
+                                {
+                                    <progress class="progress h-1.5 [&::-webkit-progress-value]:bg-primary [&::-moz-progress-bar]:bg-primary"></progress>
+                                }
+                            </div>
+                            <button class="btn btn-square btn-ghost btn-sm text-base-content/50 hover:text-base-content"
+                                    title="Cancel"
+                                    @onclick="() => _cancelConfirmId = dl.Id">
+                                <XMarkIcon class="size-4" />
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (queued.Count > 0)
+        {
+            <div class="flex flex-col gap-1">
+                <p class="text-xs uppercase tracking-wider font-black text-base-content/40 mb-1">Queued</p>
+                <ul class="list bg-base-200 rounded-box">
+                    @foreach (var (dl, i) in queued.Select((d, i) => (d, i)))
+                    {
+                        <li class="list-row items-center @(i % 2 == 1 ? "bg-base-300/40" : "")">
+                            <div class="text-base-content/40">
+                                <ClockIcon class="size-5" />
+                            </div>
+                            <div class="list-col-grow min-w-0">
+                                <span class="text-sm truncate">@dl.Title</span>
+                            </div>
+                            <span class="text-xs text-base-content/40 font-medium shrink-0">Queued</span>
+                            <button class="btn btn-square btn-ghost btn-sm text-base-content/50 hover:text-base-content"
+                                    title="Cancel"
+                                    @onclick="() => DownloadService.Cancel(dl.Id)">
+                                <XMarkIcon class="size-4" />
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+
+        @if (finished.Count > 0)
+        {
+            <div class="flex flex-col gap-1">
+                <div class="flex items-center justify-between mb-1">
+                    <p class="text-xs uppercase tracking-wider font-black text-base-content/40">Completed / Failed</p>
+                    <button class="btn btn-ghost btn-xs text-base-content/40 hover:text-base-content"
+                            @onclick="DownloadService.DismissAll">
+                        Clear all
+                    </button>
+                </div>
+                <ul class="list bg-base-200 rounded-box">
+                    @foreach (var (dl, i) in finished.Select((d, i) => (d, i)))
+                    {
+                        <li class="list-row items-center @(i % 2 == 1 ? "bg-base-300/40" : "")">
+                            <div class="@(dl.Status == DownloadStatus.Completed ? "text-success" : "text-error")">
+                                @if (dl.Status == DownloadStatus.Completed)
+                                {
+                                    <CheckCircleIcon class="size-5" />
+                                }
+                                else if (dl.Status == DownloadStatus.Failed)
+                                {
+                                    <ExclamationCircleIcon class="size-5" />
+                                }
+                                else
+                                {
+                                    <NoSymbolIcon class="size-5" />
+                                }
+                            </div>
+                            <div class="list-col-grow min-w-0">
+                                <span class="text-sm truncate @(dl.Status != DownloadStatus.Completed ? "text-base-content/50" : "")">@dl.Title</span>
+                            </div>
+                            <span class="text-xs font-medium shrink-0 @(dl.Status == DownloadStatus.Completed ? "text-success" : "text-error")">@dl.Status</span>
+                            <button class="btn btn-square btn-ghost btn-sm text-base-content/50 hover:text-base-content"
+                                    title="Dismiss"
+                                    @onclick="() => DownloadService.Dismiss(dl.Id)">
+                                <XMarkIcon class="size-4" />
+                            </button>
+                        </li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+</div>
+
+@if (_cancelConfirmId is not null)
+{
+    <div class="modal modal-open">
+        <div class="modal-box max-w-sm">
+            <h3 class="font-semibold text-base mb-1">Cancel download?</h3>
+            <p class="text-sm text-base-content/60">The partial file will be deleted. This cannot be undone.</p>
+            <div class="modal-action">
+                <button class="btn btn-sm" @onclick="() => _cancelConfirmId = null">Keep downloading</button>
+                <button class="btn btn-sm btn-error" @onclick="ConfirmCancel">Cancel download</button>
+            </div>
+        </div>
+        <div class="modal-backdrop" @onclick="() => _cancelConfirmId = null"></div>
+    </div>
+}
+
+@code {
+    private Guid? _cancelConfirmId;
+
+    private void ConfirmCancel()
+    {
+        if (_cancelConfirmId is { } id)
+            DownloadService.Cancel(id);
+        _cancelConfirmId = null;
+    }
+
+    protected override void OnInitialized()
+    {
+        DownloadService.OnChanged += HandleDownloadChanged;
+    }
+
+    private void HandleDownloadChanged()
+    {
+        InvokeAsync(StateHasChanged);
+    }
+
+    public void Dispose()
+    {
+        DownloadService.OnChanged -= HandleDownloadChanged;
+    }
+}

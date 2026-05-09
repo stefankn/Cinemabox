@@ -11,6 +11,7 @@ public class DownloadTask
     public long BytesReceived { get; set; }
     public long? TotalBytes { get; set; }
     public int Progress => TotalBytes is > 0 ? (int)(BytesReceived * 100 / TotalBytes.Value) : -1;
+    public DateTime QueuedAt { get; } = DateTime.UtcNow;
     public CancellationTokenSource Cts { get; } = new();
 }
 
@@ -35,11 +36,22 @@ public class DownloadService
         _downloads.Add(task);
         OnChanged?.Invoke();
 
-        await _slot.WaitAsync(task.Cts.Token);
+        try
+        {
+            await _slot.WaitAsync(task.Cts.Token);
+        }
+        catch (OperationCanceledException)
+        {
+            _downloads.Remove(task);
+            OnChanged?.Invoke();
+            return;
+        }
+
         if (task.Cts.Token.IsCancellationRequested)
         {
-            task.Status = DownloadStatus.Cancelled;
+            _downloads.Remove(task);
             OnChanged?.Invoke();
+            _slot.Release();
             return;
         }
 
@@ -96,6 +108,12 @@ public class DownloadService
         var task = _downloads.FirstOrDefault(d => d.Id == id);
         if (task is null || task.Status is DownloadStatus.Downloading or DownloadStatus.Queued) return;
         _downloads.Remove(task);
+        OnChanged?.Invoke();
+    }
+
+    public void DismissAll()
+    {
+        _downloads.RemoveAll(d => d.Status is not DownloadStatus.Downloading and not DownloadStatus.Queued);
         OnChanged?.Invoke();
     }
 

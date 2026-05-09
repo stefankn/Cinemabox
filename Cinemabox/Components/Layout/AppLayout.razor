@@ -30,57 +30,20 @@
                 <TvIcon class="size-4 shrink-0" />
                 Series
             </NavLink>
-        </div>
-
-        @if (DownloadService.Downloads.Count > 0)
-        {
-            <div class="border-t border-neutral-content/10 px-3 py-3 flex flex-col gap-2 min-h-0">
-                <p class="text-xs text-neutral-content px-1 uppercase tracking-wider font-black shrink-0">Downloads</p>
-                <div class="overflow-y-auto flex flex-col gap-2 scrollbar-none">
-                @foreach (var dl in DownloadService.Downloads.OrderBy(d => d.Status switch {
-                    DownloadStatus.Downloading => 0,
-                    DownloadStatus.Queued => 1,
-                    _ => 2
-                }))
-                {
-                    <div class="flex flex-col gap-1 px-1">
-                        <div class="flex items-center justify-between gap-1">
-                            <span class="text-xs text-neutral-content/90 leading-snug line-clamp-2">@dl.Title</span>
-                            <button class="shrink-0 !cursor-pointer text-neutral-content/60 hover:text-neutral-content transition-colors"
-                                    title="@(dl.Status is DownloadStatus.Downloading or DownloadStatus.Queued ? "Cancel" : "Dismiss")"
-                                    @onclick="() => { if (dl.Status is DownloadStatus.Downloading or DownloadStatus.Queued) DownloadService.Cancel(dl.Id); else DownloadService.Dismiss(dl.Id); }">
-                                <XMarkIcon class="size-3.5" />
-                            </button>
-                        </div>
-                        @if (dl.Status == DownloadStatus.Queued)
-                        {
-                            <span class="text-xs text-neutral-content/40">Queued</span>
-                        }
-                        else if (dl.Status == DownloadStatus.Downloading)
-                        {
-                            @if (dl.Progress >= 0)
-                            {
-                                <div class="flex items-center gap-1.5">
-                                    <progress class="progress h-1 flex-1 [&::-webkit-progress-value]:bg-red-500 [&::-moz-progress-bar]:bg-red-500" value="@dl.Progress" max="100"></progress>
-                                    <span class="text-xs text-neutral-content/70 w-7 text-right shrink-0">@dl.Progress%</span>
-                                </div>
-                            }
-                            else
-                            {
-                                <progress class="progress h-1 w-full [&::-webkit-progress-value]:bg-red-500 [&::-moz-progress-bar]:bg-red-500"></progress>
-                            }
-                        }
-                        else
-                        {
-                            <span class="text-xs @(dl.Status == DownloadStatus.Completed ? "text-success" : "text-error")">
-                                @dl.Status
-                            </span>
-                        }
-                    </div>
+            <NavLink href="/downloads"
+                     class="flex items-center gap-2.5 px-3 py-2 rounded text-sm text-neutral-content/60 hover:text-neutral-content hover:bg-neutral-content/10 transition-colors"
+                     ActiveClass="!text-neutral-content !bg-neutral-content/15">
+                <ArrowDownTrayIcon class="size-4 shrink-0" />
+                <span class="flex-1">Downloads</span>
+                @{
+                    var activeCount = DownloadService.Downloads.Count(d => d.Status is DownloadStatus.Downloading or DownloadStatus.Queued);
                 }
-                </div>
-            </div>
-        }
+                @if (activeCount > 0)
+                {
+                    <span class="badge badge-sm badge-primary">@activeCount</span>
+                }
+            </NavLink>
+        </div>
 
     </nav>
 
